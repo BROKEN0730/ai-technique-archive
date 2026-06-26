@@ -32,4 +32,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npm install -g wrangler
+          wrangler pages project create ${{ secrets.CLOUDFLARE_PROJECT_NAME }} --production-branch=main || true
           wrangler pages deploy ./public --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --commit-dirty=true
