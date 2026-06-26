@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 anthropic>=0.28.0
 supabase>=2.4.0
 sentence-transformers==2.7.0
