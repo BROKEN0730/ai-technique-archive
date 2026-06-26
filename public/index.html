@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 技法知識庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<style>
+  :root{--bg:#0F1117;--fg:#E8E8E8;--accent:#7C6AF7;--ok:#4ADE80;--warn:#FACC15;--card:#171A22;--muted:#8A8F9C}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;line-height:1.6}
+  header{padding:48px 20px 24px;max-width:960px;margin:0 auto}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:32px;margin:0 0 8px}
+  .sub{color:var(--muted)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 64px}
+  #q{width:100%;padding:14px 16px;border-radius:10px;border:1px solid #262a35;background:var(--card);color:var(--fg);font-size:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:24px}
+  a.card{display:block;background:var(--card);border:1px solid #232733;border-radius:12px;padding:18px;text-decoration:none;color:inherit}
+  a.card:hover{border-color:var(--accent)}
+  .card h3{font-family:'Space Grotesk',sans-serif;margin:0 0 6px;font-size:18px}
+  .card p{color:var(--muted);font-size:14px;margin:0 0 10px}
+  .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#23202f;color:var(--accent);margin-right:6px}
+  .lvl-green{color:var(--ok)} .lvl-yellow{color:var(--warn)} .lvl-orange{color:#fb923c} .lvl-red{color:#f87171}
+  .tag{font-size:12px;color:var(--muted);margin-right:6px}
+  .empty{color:var(--muted);padding:40px 0}
+  footer{max-width:960px;margin:0 auto;padding:24px 20px;color:var(--muted);font-size:13px;border-top:1px solid #1c2029}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 技法知識庫</h1>
+  <div class="sub">自動採集、分類、驗證的 AI 使用技法。<span id="count"></span></div>
+</header>
+<div class="wrap">
+  <input id="q" type="search" placeholder="搜尋技法、困境、關鍵字…" autocomplete="off">
+  <div id="results" class="grid"></div>
+  <div id="empty" class="empty" style="display:none">沒有符合的技法。</div>
+</div>
+<footer>
+  <span id="updated"></span> · 資料來源多元，僅供參考 · <a href="./last_updated.json" style="color:var(--muted)">狀態</a>
+</footer>
+<script>
+const LVL={green:'只需瀏覽器',yellow:'需 system prompt',orange:'需安裝',red:'需終端機'};
+let fuse, items=[];
+function card(it){
+  const tags=(it.tags_human||[]).slice(0,4).map(t=>`<span class="tag">#${t}</span>`).join('');
+  return `<a class="card" href="./technique/${it.id}.html">
+    <h3>${it.title_zh||''}</h3>
+    <p>${(it.summary_zh||'').slice(0,90)}</p>
+    <div><span class="pill lvl-${it.access_level}">${LVL[it.access_level]||it.access_level}</span>
+    <span class="tag">✔${it.verified_count||0} · 來源 ${it.source_convergence_count||1}</span></div>
+    <div style="margin-top:8px">${tags}</div></a>`;
+}
+function render(list){
+  const r=document.getElementById('results'), e=document.getElementById('empty');
+  r.innerHTML=list.map(card).join('');
+  e.style.display=list.length?'none':'block';
+}
+fetch('./knowledge.json').then(r=>r.json()).then(d=>{
+  items=d.items||[];
+  document.getElementById('count').textContent=`共 ${d.total_count||items.length} 筆`;
+  document.getElementById('updated').textContent='更新於 '+(d.generated_at||'').slice(0,10);
+  fuse=new Fuse(items,{keys:['title_zh','summary_zh','tags_human'],threshold:0.4});
+  render(items);
+}).catch(()=>{document.getElementById('empty').style.display='block';document.getElementById('empty').textContent='尚無資料。';});
+document.getElementById('q').addEventListener('input',e=>{
+  const v=e.target.value.trim();
+  render(v?fuse.search(v).map(x=>x.item):items);
+});
+</script>
+</body>
+</html>

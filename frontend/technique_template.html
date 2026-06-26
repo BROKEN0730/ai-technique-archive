@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{title_zh}} — AI 技法知識庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0F1117;--fg:#E8E8E8;--accent:#7C6AF7;--ok:#4ADE80;--warn:#FACC15;--card:#171A22;--muted:#8A8F9C}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 80px}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:30px;margin:14px 0 4px}
+  .en{color:var(--muted);margin:0 0 4px}
+  section{background:var(--card);border:1px solid #232733;border-radius:12px;padding:18px 20px;margin:16px 0}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0 0 10px;color:var(--accent)}
+  ul{margin:0;padding-left:20px} li{margin:4px 0} .muted{color:var(--muted);font-size:13px}
+  pre{background:#0c0e14;border:1px solid #232733;border-radius:8px;padding:14px;overflow:auto;font-family:'JetBrains Mono',monospace;font-size:13px;white-space:pre-wrap}
+  .pill{display:inline-block;font-size:13px;padding:3px 10px;border-radius:999px;background:#23202f;color:var(--accent)}
+  .tag{display:inline-block;font-size:12px;color:var(--muted);margin-right:8px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer}
+  button.ghost{background:#23202f;color:var(--fg)}
+  details summary{cursor:pointer;color:var(--warn)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:560px){.cols{grid-template-columns:1fr}}
+  .fb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  #fbmsg{color:var(--ok);font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← 返回列表</a>
+
+  <!-- 1. 門檻標注 -->
+  <div style="margin-top:10px"><span class="pill">{{access_label}}</span></div>
+
+  <!-- 2. 標題說明 -->
+  <h1>{{title_zh}}</h1>
+  <p class="en">{{title_en}}</p>
+  <p>{{summary_zh}}</p>
+  <div>{{tags_html}}</div>
+
+  <!-- 3. 可複製模板 -->
+  <section>
+    <h2>可複製模板</h2>
+    <pre id="tpl">{{copyable_prompt_template}}</pre>
+    <button onclick="copyTpl()">複製模板</button>
+    <span id="copied" class="muted"></span>
+  </section>
+
+  <!-- 4. 成功標準 -->
+  <section><h2>成功標準</h2><p>{{success_criteria}}</p></section>
+
+  <!-- 5. 卡住了嗎（折疊） -->
+  <section>
+    <details><summary>卡住了嗎？</summary>
+      <p class="muted" style="margin-top:10px">起手式 prompt：</p>
+      <pre>{{onboarding_prompt_template}}</pre>
+    </details>
+  </section>
+
+  <!-- 6. 診斷清單 -->
+  <section><h2>診斷清單</h2><ul>{{diagnostic_html}}</ul></section>
+
+  <!-- 7. 演化軌跡 -->
+  <section><h2>演化軌跡</h2><ul>{{versions_html}}</ul></section>
+
+  <!-- 8. 技法原理 -->
+  <section><h2>技法原理</h2><p>{{mechanism_zh}}</p></section>
+
+  <!-- 9. 適用 / 失效並列 -->
+  <section><h2>適用 / 失效</h2>
+    <div class="cols">
+      <div><div class="muted">適用情境</div><ul>{{scenarios_html}}</ul></div>
+      <div><div class="muted">失效條件</div><ul>{{failures_html}}</ul></div>
+    </div>
+  </section>
+
+  <!-- 10. 相關技法 -->
+  <section><h2>相關技法</h2><ul>{{relations_html}}</ul></section>
+
+  <!-- 11. 來源可信度 -->
+  <section><h2>來源可信度</h2>
+    <p>可信等級：<b>{{confidence_level}}</b> · 來源收斂 {{convergence}} 次</p>
+    <p class="muted">使用者回報：✔ {{verified}} · 部分 {{partial}} · 失敗 {{failed}}</p>
+  </section>
+
+  <!-- 12. feedback 表單 -->
+  <section><h2>你試過了嗎？回報結果</h2>
+    <div class="fb">
+      <button onclick="fb('success')">成功</button>
+      <button class="ghost" onclick="fb('partial')">部分成功</button>
+      <button class="ghost" onclick="fb('failed')">失敗</button>
+      <button class="ghost" onclick="fb('modified_success')">改一下就成功</button>
+    </div>
+    <div id="fbmsg"></div>
+  </section>
+</div>
+
+<script>
+const KID="{{id}}";
+function copyTpl(){
+  navigator.clipboard.writeText(document.getElementById('tpl').innerText).then(()=>{
+    document.getElementById('copied').textContent='已複製';
+  });
+}
+const SUPABASE_URL="{{SUPABASE_URL}}", SUPABASE_ANON_KEY="{{SUPABASE_ANON_KEY}}";
+let sb=null;
+if(SUPABASE_URL && SUPABASE_ANON_KEY){ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }
+async function fb(type){
+  const m=document.getElementById('fbmsg');
+  if(!sb){ m.textContent='（尚未設定回報後端）'; return; }
+  const {error}=await sb.from('feedback').insert({knowledge_id:KID,result_type:type,ai_model_used:null});
+  m.textContent=error?('送出失敗：'+error.message):'感謝回報！';
+}
+</script>
+</body>
+</html>
